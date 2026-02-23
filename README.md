@@ -1,4 +1,4 @@
-# super-crouton
+# Super-Crouton
 
 A self-hosted Docker stack combining an nginx reverse proxy, [Kasm Workspaces](https://kasmweb.com/) (browser-based virtual desktops), and [Outline](https://www.getoutline.com/) (collaborative wiki).
 
@@ -72,10 +72,57 @@ super-crouton/
 
 - Docker Engine 24+
 - Docker Compose v2
-- A domain with DNS A records pointing to this host:
-  - `kasm.yourdomain.com`
-  - `outline.yourdomain.com`
-- TLS certificate and key for those domains
+- A domain and DNS records pointing to this host (see options below)
+- TLS certificate and key (see options below)
+
+### DNS records
+
+You have two options. Either works — the wildcard approach requires fewer changes as you add new services.
+
+**Option A — Wildcard (recommended)**
+
+Add a single A record that covers all subdomains:
+
+| Type | Host | Data |
+|---|---|---|
+| A | `*` | `<your server IP>` |
+| A | `@` | `<your server IP>` |
+
+**Option B — Per-subdomain records**
+
+Add one A record per service:
+
+| Type | Host | Data |
+|---|---|---|
+| A | `kasm` | `<your server IP>` |
+| A | `outline` | `<your server IP>` |
+
+### TLS certificates
+
+A wildcard DNS record does **not** automatically give you a wildcard TLS cert. Pick the option that matches your DNS choice above.
+
+**Option A — Multi-domain cert (simplest, pairs with either DNS option)**
+
+Uses HTTP challenge — no extra DNS steps required:
+
+```bash
+certbot certonly --standalone \
+  -d kasm.yourdomain.com \
+  -d outline.yourdomain.com
+cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem certs/
+cp /etc/letsencrypt/live/yourdomain.com/privkey.pem   certs/
+```
+
+**Option B — Wildcard cert (pairs with wildcard DNS, covers future subdomains)**
+
+Requires a DNS TXT challenge. Certbot will prompt you to temporarily add a `_acme-challenge` TXT record in your DNS provider:
+
+```bash
+certbot certonly --manual --preferred-challenges dns \
+  -d "*.yourdomain.com"
+cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem certs/
+cp /etc/letsencrypt/live/yourdomain.com/privkey.pem   certs/
+```
 
 ## Setup
 
