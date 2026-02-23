@@ -1,0 +1,6 @@
+# Environment secrets
+.env
+
+# Certificates — keep the folder, ignore actual cert files
+certs/*
+!certs/.gitkeep
