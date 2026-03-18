@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../images/super-crouton.png" alt="Super-Crouton" width="120" />
+</p>
+
 # Cloudflare Tunnels Setup
 
 This guide walks through installing `cloudflared`, creating a tunnel, and configuring the two public hostnames required by super-crouton.

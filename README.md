@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="images/super-crouton.png" alt="Super-Crouton" width="200" />
+</p>
+
 # Super-Crouton
 
 A self-hosted Docker stack providing secure remote desktop access via an RDP gateway, backed by Keycloak for OIDC authentication, exposed publicly through Cloudflare Tunnels.
