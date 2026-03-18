@@ -1,0 +1,32 @@
+Server:
+  Authentication:
+    - openid
+  BasicAuthTimeout: 5
+  Tls: disable
+  GatewayAddress: {{GATEWAY_ADDRESS}}
+  Port: 443
+  SessionKey: {{SESSION_KEY}}
+  SessionEncryptionKey: {{SESSION_ENCRYPTION_KEY}}
+
+  # Use a hostname, not just a raw IP, for MSTSC compatibility.
+  Hosts:
+{{HOSTS}}
+
+OpenId:
+  ProviderUrl: {{OIDC_PROVIDER_URL}}
+  ClientId: {{OIDC_CLIENT_ID}}
+  ClientSecret: {{OIDC_CLIENT_SECRET}}
+
+Caps:
+  SmartCardAuth: false
+  TokenAuth: true
+  IdleTimeout: 0
+  EnablePrinter: true
+  EnablePort: true
+
+Security:
+  PAATokenEncryptionKey: {{PAA_ENCRYPTION_KEY}}
+  PAATokenSigningKey: {{PAA_SIGNING_KEY}}
+
+Client:
+  Defaults: /etc/rdpgw/defaults.rdp
