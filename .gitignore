@@ -4,3 +4,6 @@
 # Certificates — keep the folder, ignore actual cert files
 certs/*
 !certs/.gitkeep
+
+# RdpGw configuration
+rdpgw/config/rdpgw.yaml

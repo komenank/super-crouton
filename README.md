@@ -1,6 +1,136 @@
 # Super-Crouton
 
-A self-hosted Docker stack combining an nginx reverse proxy, [Kasm Workspaces](https://kasmweb.com/) (browser-based virtual desktops), and [Outline](https://www.getoutline.com/) (collaborative wiki).
+A self-hosted Docker stack providing secure remote desktop access via an RDP gateway, backed by Keycloak for OIDC authentication, exposed publicly through Cloudflare Tunnels.
+
+## Architecture
+
+```
+Internet
+   │
+   ▼  HTTPS (443)
+ ┌──────────────────────────────┐
+ │      Cloudflare Tunnel       │
+ └──────┬───────────────────────┘
+        │
+   ┌────┴────────────────────┐
+   ▼                         ▼
+auth.<my-domain>      rdp.<my-domain>
+(http://localhost:18080) (http://localhost:19443)
+   │                         │
+   ▼                         ▼
+┌──────────┐           ┌───────────┐
+│ Keycloak │◄──────────│  rdpgw    │
+│  + DB    │  OIDC     │           │
+└──────────┘           └─────┬─────┘
+                             │ RDP
+                             ▼
+                       gaming:3389
+```
+
+## Services
+
+| Service | Image | Purpose | Local Port |
+|---|---|---|---|
+| `keycloak` | `quay.io/keycloak/keycloak:24.0` | OIDC identity provider | `127.0.0.1:18080` |
+| `keycloak-db` | `postgres:16` | Keycloak database | (internal) |
+| `rdpgw` | `bolkedebruin/rdpgw:latest` | RDP-over-HTTPS gateway | `127.0.0.1:19443` |
+
+## Project Structure
+
+```
+super-crouton/
+├── certs/                          # Reserved for TLS certs if needed (git-ignored)
+├── keycloak/
+│   ├── docker-compose.yml
+│   ├── .env                        # Secrets (git-ignored)
+│   └── .env.example                # Template for required variables
+├── rdpgw/
+│   ├── config/
+│   │   └── rdpgw.yaml              # rdpgw configuration
+│   ├── docker-compose.yml
+│   └── .env                        # Secrets (git-ignored)
+├── .gitignore
+└── README.md
+```
+
+## Prerequisites
+
+- Docker Engine 24+
+- Docker Compose v2
+- A Cloudflare account with a domain and Cloudflare Tunnels configured
+- DNS records managed by Cloudflare (tunnels handle routing automatically)
+
+## Setup
+
+### 1. Keycloak
+
+Copy `.env.example` to `.env` and fill in values:
+
+```sh
+cd keycloak
+cp .env.example .env
+```
+
+| Variable | Description |
+|---|---|
+| `POSTGRES_PASSWORD` | Password for the Postgres database |
+| `KC_DB_PASSWORD` | Password Keycloak uses to connect to Postgres (set the same as above) |
+| `KC_BOOTSTRAP_ADMIN_PASSWORD` | Initial admin password for the Keycloak console |
+
+Start the stack:
+
+```sh
+docker compose up -d
+```
+
+Access the admin console at `https://auth.<my-domain>` once the Cloudflare Tunnel is active (or `http://localhost:18080` locally).
+
+After logging in, create a realm and an OIDC client for rdpgw:
+- **Client ID:** `rdpgw`
+- **Valid redirect URIs:** `https://rdp.<my-domain>/callback`
+
+### 2. rdpgw
+
+Edit `rdpgw/.env` with your values:
+
+| Variable | Description |
+|---|---|
+| `RDPGW_PORT` | Local port rdpgw listens on (default: `19443`) |
+| `OIDC_ISSUER` | Keycloak realm URL, e.g. `https://auth.<my-domain>/realms/<realm>` |
+| `OIDC_CLIENT_ID` | OIDC client ID configured in Keycloak |
+| `OIDC_CLIENT_SECRET` | OIDC client secret from Keycloak |
+| `RDP_TARGET` | RDP host to connect to, e.g. `192.168.1.100:3389` |
+
+Edit `rdpgw/config/rdpgw.yaml` to update allowed `Hosts`, security keys, and the OIDC `ProviderUrl`.
+
+Start the stack:
+
+```sh
+cd rdpgw
+docker compose up -d
+```
+
+### 3. Cloudflare Tunnels
+
+Configure two public hostnames in your tunnel:
+
+| Public hostname | Service URL |
+|---|---|
+| `auth.<my-domain>` | `http://localhost:18080` |
+| `rdp.<my-domain>` | `http://localhost:19443` |
+
+> Both services use plain HTTP internally — TLS is terminated by Cloudflare.
+
+## Connecting via RDP
+
+Use the Windows built-in **Remote Desktop Connection** (`mstsc.exe`) with an RD Gateway:
+
+1. Open **Remote Desktop Connection → Show Options → Advanced**
+2. Under **Connect from anywhere**, click **Settings**
+3. Set **RD Gateway server** to `rdp.<my-domain>`
+4. Connect to host `gaming` (or any host listed in `rdpgw.yaml`)
+5. Authenticate via the Keycloak OIDC login page when prompted
+
 
 ## Architecture
 

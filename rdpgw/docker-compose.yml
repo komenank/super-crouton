@@ -1,0 +1,26 @@
+services:
+  rdpgw:
+    image: bolkedebruin/rdpgw:latest
+    container_name: rdpgw
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      RDPGW_LISTEN: ":443"
+
+      # OIDC config
+      RDPGW_AUTH: oidc
+      RDPGW_OIDC_ISSUER: ${OIDC_ISSUER}
+      RDPGW_OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
+      RDPGW_OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+
+      # backend RDP target
+      # RDPGW_ALLOWED_TARGETS: ${RDP_TARGET}
+
+    ports:
+      - "127.0.0.1:${RDPGW_PORT}:443"
+    volumes:
+      - ./config/rdpgw.yaml:/opt/rdpgw/rdpgw.yaml:ro
+      - ./config/defaults.rdp:/etc/rdpgw/defaults.rdp:ro
