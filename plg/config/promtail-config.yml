@@ -1,0 +1,62 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # ── Docker container logs (auto-discovery) ────────────────────────
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      # Use the container name (without leading slash) as a label
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/?(.*)"
+        target_label: container
+      # Carry over the compose service name
+      - source_labels: ["__meta_docker_container_label_com_docker_compose_service"]
+        target_label: service
+      # Carry over the compose project name
+      - source_labels: ["__meta_docker_container_label_com_docker_compose_project"]
+        target_label: project
+      # Tag the Docker image
+      - source_labels: ["__meta_docker_container_label_com_docker_compose_project"]
+        target_label: compose_project
+    pipeline_stages:
+      # ── Parse Docker JSON log format ──────────────────────────────
+      - docker: {}
+
+      # ── Keycloak: extract level from its log lines ────────────────
+      #    Keycloak logs like:  2024-03-19 10:02:33,456 WARN  [org.keycloak...] ...
+      - match:
+          selector: '{service="keycloak"}'
+          stages:
+            - regex:
+                expression: '^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+\s+(?P<level>\w+)'
+            - labels:
+                level:
+
+      # ── rdpgw: extract level from its log lines ───────────────────
+      #    rdpgw logs like:  time="..." level=warning msg="..."
+      - match:
+          selector: '{service="rdpgw"}'
+          stages:
+            - regex:
+                expression: 'level=(?P<level>\w+)'
+            - labels:
+                level:
+
+      # ── Postgres (keycloak-db): extract level ─────────────────────
+      - match:
+          selector: '{service="keycloak-db"}'
+          stages:
+            - regex:
+                expression: '^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}.\d+\s+\w+\s+(?P<level>\w+)'
+            - labels:
+                level:

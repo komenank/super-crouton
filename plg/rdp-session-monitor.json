@@ -1,0 +1,222 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "title": "Error & Warning Rate",
+      "description": "Rate of error and warning log lines across all services",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "loki", "uid": "" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 40,
+            "stacking": { "mode": "normal" }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byFrameRefID", "options": "Errors" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byFrameRefID", "options": "Warnings" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "Errors",
+          "datasource": { "type": "loki", "uid": "" },
+          "expr": "sum(count_over_time({project=~\"keycloak|rdpgw\"} |~ `(?i)(error|fatal|panic)` [$__auto]))",
+          "legendFormat": "Errors"
+        },
+        {
+          "refId": "Warnings",
+          "datasource": { "type": "loki", "uid": "" },
+          "expr": "sum(count_over_time({project=~\"keycloak|rdpgw\"} |~ `(?i)(warn)` [$__auto]))",
+          "legendFormat": "Warnings"
+        }
+      ]
+    },
+    {
+      "title": "RDP Session Events",
+      "description": "Disconnect, reconnect, and connection events from rdpgw",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 7 },
+      "datasource": { "type": "loki", "uid": "" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 40,
+            "stacking": { "mode": "normal" }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byFrameRefID", "options": "Disconnects" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byFrameRefID", "options": "Connections" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "Disconnects",
+          "datasource": { "type": "loki", "uid": "" },
+          "expr": "count_over_time({service=\"rdpgw\"} |~ `(?i)(disconnect|session closed|connection lost|EOF|broken pipe|reset by peer)` [$__auto])",
+          "legendFormat": "Disconnects"
+        },
+        {
+          "refId": "Connections",
+          "datasource": { "type": "loki", "uid": "" },
+          "expr": "count_over_time({service=\"rdpgw\"} |~ `(?i)(new connection|connected|session started|handshake)` [$__auto])",
+          "legendFormat": "Connections"
+        }
+      ]
+    },
+    {
+      "title": "Keycloak Token Events",
+      "description": "Authentication, token refresh, and failure events",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 14 },
+      "datasource": { "type": "loki", "uid": "" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 40,
+            "stacking": { "mode": "normal" }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byFrameRefID", "options": "AuthFailures" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byFrameRefID", "options": "TokenGrants" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "TokenGrants",
+          "datasource": { "type": "loki", "uid": "" },
+          "expr": "count_over_time({service=\"keycloak\"} |~ `(?i)(token_endpoint|CODE_TO_TOKEN)` [$__auto])",
+          "legendFormat": "Token grants"
+        },
+        {
+          "refId": "AuthFailures",
+          "datasource": { "type": "loki", "uid": "" },
+          "expr": "count_over_time({service=\"keycloak\"} |~ `(?i)(LOGIN_ERROR|REFRESH_TOKEN_ERROR|invalid_grant|AUTH_FAILURE)` [$__auto])",
+          "legendFormat": "Auth failures"
+        }
+      ]
+    },
+    {
+      "title": "rdpgw Logs",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 21 },
+      "datasource": { "type": "loki", "uid": "" },
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "" },
+          "expr": "{service=\"rdpgw\"}"
+        }
+      ]
+    },
+    {
+      "title": "Keycloak Logs",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 21 },
+      "datasource": { "type": "loki", "uid": "" },
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "" },
+          "expr": "{service=\"keycloak\"}"
+        }
+      ]
+    },
+    {
+      "title": "All Logs (unified stream)",
+      "type": "logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 31 },
+      "datasource": { "type": "loki", "uid": "" },
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "" },
+          "expr": "{project=~\"keycloak|rdpgw\"}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["super-crouton", "rdpgw", "keycloak", "loki"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Super-Crouton — RDP Session Monitor",
+  "uid": "super-crouton-rdp",
+  "version": 1
+}
