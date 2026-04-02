@@ -1,0 +1,6 @@
+include:
+  - path: keycloak/docker-compose.yml
+  - path: outline/docker-compose.yml
+  - path: plg/docker-compose.yml
+  - path: rdpgw/docker-compose.yml
+  - path: portainer/docker-compose.yml

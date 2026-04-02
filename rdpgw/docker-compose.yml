@@ -19,6 +19,18 @@ services:
       # backend RDP target
       # RDPGW_ALLOWED_TARGETS: ${RDP_TARGET}
 
+      # Disable client IP verification — the browser OIDC callback and the RDP
+      # client tunnel can arrive via different IP families (IPv4 vs IPv6) through
+      # Cloudflare's dual-stack edge, causing a spurious IP mismatch in the PAA
+      # token. The YAML setting alone is not applied due to a koanf v2 key-case
+      # sensitivity issue (default uses mixed-case confmap key), so this env var
+      # override (double-underscore = nested key separator) is required.
+      RDPGW_SECURITY__VERIFYCLIENTIP: "false"
+
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
     ports:
       - "127.0.0.1:${RDPGW_PORT}:443"
     volumes:

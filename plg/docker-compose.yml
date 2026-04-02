@@ -43,4 +43,6 @@ services:
 
 volumes:
   loki-data:
+    name: plg_loki-data
   grafana-data:
+    name: plg_grafana-data

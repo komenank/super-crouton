@@ -20,6 +20,7 @@ services:
       - --hostname-strict=false
       - --proxy-headers=xforwarded
       - --http-enabled=true
+      - --health-enabled=true
     environment:
       KC_DB: postgres
       KC_DB_URL_HOST: keycloak-db
@@ -36,8 +37,16 @@ services:
     ports:
       - "127.0.0.1:18080:8080"
 
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '\"status\": \"UP\"' <&3"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
     depends_on:
       - keycloak-db
 
 volumes:
   keycloak_db:
+    name: keycloak_keycloak_db
