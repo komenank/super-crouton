@@ -52,6 +52,11 @@ TLS is terminated by Cloudflare — both services communicate over plain HTTP/S 
 | `keycloak-db` | `postgres:16` | Keycloak database | internal only |
 | `rdpgw` | `bolkedebruin/rdpgw:latest` | RDP-over-HTTPS gateway | `127.0.0.1:19443` |
 
+> Current default stack: `keycloak`, `outline`, and `portainer`.
+>
+> `plg`, `rdpgw`, and `guacamole` are currently sunsetted (kept in the repo, disabled in the root `docker-compose.yml`).
+> Re-enable any of them by uncommenting its `include` entry in `docker-compose.yml`.
+
 ## Project Structure
 
 ```

@@ -1,6 +1,10 @@
 include:
   - path: keycloak/docker-compose.yml
   - path: outline/docker-compose.yml
-  - path: plg/docker-compose.yml
-  - path: rdpgw/docker-compose.yml
   - path: portainer/docker-compose.yml
+
+  # Sunsetted apps (kept in repo, disabled by default).
+  # Re-enable by uncommenting the include(s) below.
+  # - path: plg/docker-compose.yml
+  # - path: rdpgw/docker-compose.yml
+  # - path: guacamole/docker-compose.yml

@@ -1,0 +1,83 @@
+services:
+  # One-shot container: generates Guacamole's PostgreSQL schema into a shared
+  # volume. Postgres then picks it up via docker-entrypoint-initdb.d on first
+  # boot (subsequent restarts skip it automatically).
+  guacamole-initdb:
+    image: guacamole/guacamole:latest
+    container_name: guacamole-initdb
+    restart: "no"
+    user: "0"
+    volumes:
+      - guacamole-initdb:/init
+    entrypoint: ["/bin/sh", "-c", "/opt/guacamole/bin/initdb.sh --postgresql > /init/initdb.sql"]
+
+  guacamole-db:
+    image: postgres:16-alpine
+    container_name: guacamole-db
+    restart: unless-stopped
+    depends_on:
+      guacamole-initdb:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_USER: guacamole
+      POSTGRES_PASSWORD: ${GUAC_POSTGRES_PASSWORD}
+      POSTGRES_DB: guacamole
+    volumes:
+      - guacamole-db-data:/var/lib/postgresql/data
+      - guacamole-initdb:/docker-entrypoint-initdb.d/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guacamole -d guacamole"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  guacd:
+    image: guacamole/guacd:latest
+    container_name: guacd
+    restart: unless-stopped
+    extra_hosts:
+      - "${TARGET_HOSTNAME}:${TARGET_IP}"
+
+  guacamole:
+    image: guacamole/guacamole:latest
+    container_name: guacamole
+    restart: unless-stopped
+    depends_on:
+      guacamole-db:
+        condition: service_healthy
+      guacd:
+        condition: service_started
+      keycloak:
+        condition: service_healthy
+    environment:
+      GUACD_HOSTNAME: guacd
+      GUACD_PORT: "4822"
+
+      POSTGRESQL_HOSTNAME: guacamole-db
+      POSTGRESQL_DATABASE: guacamole
+      POSTGRESQL_USER: guacamole
+      POSTGRESQL_PASSWORD: ${GUAC_POSTGRES_PASSWORD}
+      # Automatically create a Guacamole user record when a new OIDC user
+      # logs in for the first time. An admin must still assign connections.
+      POSTGRESQL_AUTO_CREATE_ACCOUNTS: "true"
+
+      # Keycloak OIDC — reuses the same realm as rdpgw.
+      # Create a separate 'guacamole' client in Keycloak with:
+      #   - Client authentication: OFF (public client)
+      #   - Valid redirect URIs: https://<your-guac-hostname>/guacamole/
+      OPENID_AUTHORIZATION_ENDPOINT: ${OIDC_ISSUER}/protocol/openid-connect/auth
+      OPENID_JWKS_ENDPOINT: ${OIDC_ISSUER}/protocol/openid-connect/certs
+      OPENID_ISSUER: ${OIDC_ISSUER}
+      OPENID_CLIENT_ID: ${GUAC_OIDC_CLIENT_ID}
+      OPENID_CLIENT_SECRET: ${GUAC_OIDC_CLIENT_SECRET}
+      OPENID_REDIRECT_URI: ${GUACAMOLE_REDIRECT_URI}
+      OPENID_USERNAME_CLAIM_TYPE: preferred_username
+
+    ports:
+      - "127.0.0.1:${GUACAMOLE_PORT:-18888}:8080"
+
+volumes:
+  guacamole-initdb:
+    name: guacamole_initdb
+  guacamole-db-data:
+    name: guacamole_db-data
