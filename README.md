@@ -48,7 +48,7 @@ TLS is terminated by Cloudflare — both services communicate over plain HTTP/S 
 
 | Service | Image | Purpose | Local port |
 |---|---|---|---|
-| `keycloak` | `quay.io/keycloak/keycloak:24.0` | OIDC identity provider | `127.0.0.1:18080` |
+| `keycloak` | `quay.io/keycloak/keycloak:26.6.2` | OIDC identity provider | `127.0.0.1:18080` |
 | `keycloak-db` | `postgres:16` | Keycloak database | internal only |
 | `rdpgw` | `bolkedebruin/rdpgw:latest` | RDP-over-HTTPS gateway | `127.0.0.1:19443` |
 

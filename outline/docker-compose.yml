@@ -1,6 +1,6 @@
 services:
   outline:
-    image: outlinewiki/outline:1.6.1
+    image: outlinewiki/outline:1.7.1
     container_name: outline
     env_file: .env
     ports:
@@ -17,7 +17,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16.14-alpine
     container_name: outline-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-outline}
@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4.9-alpine
     container_name: outline-redis
     volumes:
       - redis-data:/data

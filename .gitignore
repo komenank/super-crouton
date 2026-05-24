@@ -7,3 +7,7 @@ certs/*
 
 # RdpGw configuration
 rdpgw/config/rdpgw.yaml
+
+# Local database backups (do not commit dumps)
+backups/*
+!backups/.gitkeep
