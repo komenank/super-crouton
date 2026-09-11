@@ -1,6 +1,6 @@
 services:
   outline:
-    image: outlinewiki/outline:1.7.1
+    image: outlinewiki/outline:1.10.1
     container_name: outline
     env_file: .env
     ports:
