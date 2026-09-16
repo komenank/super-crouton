@@ -80,6 +80,10 @@ kcadm create clients -r master -s clientId=wiki-test -s name=Wiki \
   -s enabled=true -s publicClient=true -s 'redirectUris=["http://localhost/*"]' >/dev/null
 kcadm create clients -r master -s clientId=nameless-test \
   -s enabled=true -s publicClient=true -s 'redirectUris=["http://localhost/*"]' >/dev/null
+# And one whose display name is a message-bundle key, the way Keycloak's own
+# built-in clients store theirs.
+kcadm create clients -r master -s clientId=bundlename-test -s 'name=${client_account-console}' \
+  -s enabled=true -s publicClient=true -s 'redirectUris=["http://localhost/*"]' >/dev/null
 
 auth_url() {
   printf '%s/realms/master/protocol/openid-connect/auth?client_id=%s&response_type=code&scope=openid&redirect_uri=http%%3A%%2F%%2Flocalhost%%2Fcb' \
@@ -89,6 +93,7 @@ auth_url() {
 echo "==> Fetching pages"
 curl -s --max-time 20 -c "${WORK}/cookies.txt" "$(auth_url wiki-test)" -o "${WORK}/login.html"
 curl -s --max-time 20 "$(auth_url nameless-test)" -o "${WORK}/nameless.html"
+curl -s --max-time 20 "$(auth_url bundlename-test)" -o "${WORK}/bundlename.html"
 
 echo
 echo "==> Assertions"
@@ -120,11 +125,33 @@ assert_contains "${WORK}/login.html" \
 assert_contains "${WORK}/nameless.html" \
   "Continuing to <strong>nameless-test</strong>" "nameless client falls back to clientId in the hero"
 
+assert_contains "${WORK}/bundlename.html" \
+  "Continuing to <strong>Account Console</strong>" \
+  "message-key client name is resolved, not rendered raw"
+
+# --- branding assets come from our theme, not upstream ---
+FAV_PATH="$(grep -o '/resources/[^"]*/login/anjoscode/img/favicon.ico' "${WORK}/login.html" | head -1 || true)"
+if [ -n "$FAV_PATH" ]; then
+  curl -s --max-time 15 "${BASE}${FAV_PATH}" -o "${WORK}/favicon.ico"
+  if cmp -s "${WORK}/favicon.ico" "${THEMES_DIR}/anjoscode/login/resources/img/favicon.ico"; then
+    ok "favicon served from our theme"
+  else
+    bad "favicon is not ours (falling back to upstream?)"
+  fi
+else
+  bad "favicon URL not found in page"
+fi
+
 # --- stylesheet is actually served ---
 CSS_PATH="$(grep -o '/resources/[^"]*/login/anjoscode/css/anjoscode.css' "${WORK}/login.html" | head -1 || true)"
 if [ -n "$CSS_PATH" ]; then
   curl -s --max-time 15 "${BASE}${CSS_PATH}" -o "${WORK}/theme.css"
   assert_contains "${WORK}/theme.css" "#627293" "stylesheet served with palette"
+  # Guards the two styling fixes from the 2026-09-16 review.
+  assert_contains "${WORK}/theme.css" "login__main-header" \
+    "card-top accent override still present"
+  assert_contains "${WORK}/theme.css" "BorderBottomWidth: 0" \
+    "PatternFly focus pseudo-border still neutralised"
 else
   bad "stylesheet URL not found in page"
 fi
