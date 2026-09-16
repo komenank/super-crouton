@@ -46,9 +46,16 @@ Create `scripts/test-login-theme.sh`:
 # in-memory database.
 set -euo pipefail
 
+# --keep leaves the container running so the themed pages can be browsed by
+# hand. Bind address is overridable for remote/SSH setups; the default keeps
+# the port off the network (forward it over SSH, or set KC_TEST_BIND).
+KEEP=0
+[ "${1:-}" = "--keep" ] && KEEP=1
+
 IMAGE="quay.io/keycloak/keycloak:26.6.2"
 NAME="kc-theme-test"
 PORT="18099"
+BIND="${KC_TEST_BIND:-127.0.0.1}"
 BASE="http://127.0.0.1:${PORT}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 THEMES_DIR="${REPO_ROOT}/keycloak/themes"
@@ -58,7 +65,14 @@ PASS=0
 FAIL=0
 
 cleanup() {
-  docker rm -f "$NAME" >/dev/null 2>&1 || true
+  if [ "$KEEP" = "1" ]; then
+    echo
+    echo "--keep: container '${NAME}' left running."
+    echo "  Sign-in page: ${BASE}/realms/master/protocol/openid-connect/auth?client_id=wiki-test&response_type=code&scope=openid&redirect_uri=http%3A%2F%2Flocalhost%2Fcb"
+    echo "  Stop it with: docker rm -f ${NAME}"
+  else
+    docker rm -f "$NAME" >/dev/null 2>&1 || true
+  fi
   rm -rf "$WORK"
 }
 trap cleanup EXIT
@@ -71,11 +85,6 @@ assert_contains() {
   if grep -qF -- "$2" "$1"; then ok "$3"; else bad "$3 (missing: $2)"; fi
 }
 
-# assert_not_contains <file> <needle> <description>
-assert_not_contains() {
-  if grep -qF -- "$2" "$1"; then bad "$3 (unexpectedly present: $2)"; else ok "$3"; fi
-}
-
 # assert_status <url> <expected> <description>
 assert_status() {
   local code
@@ -85,10 +94,12 @@ assert_status() {
 
 kcadm() { docker exec "$NAME" /opt/keycloak/bin/kcadm.sh "$@"; }
 
+mkdir -p "$THEMES_DIR"
+
 echo "==> Starting disposable Keycloak on ${PORT}"
 docker rm -f "$NAME" >/dev/null 2>&1 || true
 docker run -d --name "$NAME" \
-  -p "127.0.0.1:${PORT}:8080" \
+  -p "${BIND}:${PORT}:8080" \
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
   -v "${THEMES_DIR}:/opt/keycloak/themes:ro" \
@@ -146,11 +157,13 @@ assert_contains "${WORK}/login.html" "kc-hero"          "hero panel present"
 assert_contains "${WORK}/login.html" "super-crouton"    "mascot image referenced"
 
 # --- per-application context ---
-assert_contains "${WORK}/login.html"    "Wiki"          "named client shows its display name"
-assert_contains "${WORK}/nameless.html" "nameless-test" "nameless client falls back to clientId"
+assert_contains "${WORK}/login.html" \
+  "Continuing to <strong>Wiki</strong>" "named client shows its display name in the hero"
+assert_contains "${WORK}/nameless.html" \
+  "Continuing to <strong>nameless-test</strong>" "nameless client falls back to clientId in the hero"
 
 # --- stylesheet is actually served ---
-CSS_PATH="$(grep -o '/resources/[^"]*/login/anjoscode/css/anjoscode.css' "${WORK}/login.html" | head -1)"
+CSS_PATH="$(grep -o '/resources/[^"]*/login/anjoscode/css/anjoscode.css' "${WORK}/login.html" | head -1 || true)"
 if [ -n "$CSS_PATH" ]; then
   curl -s --max-time 15 "${BASE}${CSS_PATH}" -o "${WORK}/theme.css"
   assert_contains "${WORK}/theme.css" "#627293" "stylesheet served with palette"
@@ -159,7 +172,7 @@ else
 fi
 
 # --- unhappy paths inherit the same shell ---
-RESET_PATH="$(grep -o '/realms/master/login-actions/reset-credentials[^"]*' "${WORK}/login.html" | head -1 | sed 's/&amp;/\&/g')"
+RESET_PATH="$(grep -o '/realms/master/login-actions/reset-credentials[^"]*' "${WORK}/login.html" | head -1 | sed 's/&amp;/\&/g' || true)"
 if [ -n "$RESET_PATH" ]; then
   curl -s --max-time 20 "${BASE}${RESET_PATH}" -o "${WORK}/reset.html"
   assert_contains "${WORK}/reset.html" "kc-hero" "forgot-password page inherits hero"
@@ -172,7 +185,7 @@ assert_contains "${WORK}/error.html" "kc-hero" "error page inherits hero"
 
 # --- invalid credentials: the alert region renders inside the themed shell ---
 LOGIN_ACTION="$(grep -o 'action="[^"]*login-actions/authenticate[^"]*"' "${WORK}/login.html" \
-  | head -1 | sed 's/^action="//; s/"$//; s/&amp;/\&/g')"
+  | head -1 | sed 's/^action="//; s/"$//; s/&amp;/\&/g' || true)"
 if [ -n "$LOGIN_ACTION" ]; then
   curl -s --max-time 20 -b "${WORK}/cookies.txt" -c "${WORK}/cookies.txt" \
     -X POST "$LOGIN_ACTION" \
@@ -573,29 +586,24 @@ body#keycloak-bg {
 
 Expected: **all assertions pass**, including `stylesheet served with palette`.
 
-- [ ] **Step 3: Capture a screenshot for morning review**
+- [ ] **Step 3: Eyeball the rendered page**
 
-While the harness container is still up, or by re-running it with the teardown trap disabled, render the page to an image if a headless browser is available:
-
-```bash
-command -v chromium >/dev/null 2>&1 && echo "chromium available" || echo "no headless browser; skip"
-```
-
-If available, start the container manually using the same `docker run` line from `scripts/test-login-theme.sh`, configure it with the same `kcadm` calls, then:
+No headless browser is installed on this host, so the harness grew a `--keep`
+flag instead: it skips teardown and prints a sign-in URL.
 
 ```bash
-chromium --headless --disable-gpu --screenshot=/tmp/login-theme.png \
-  --window-size=1280,860 \
-  "http://127.0.0.1:18099/realms/master/protocol/openid-connect/auth?client_id=wiki-test&response_type=code&scope=openid&redirect_uri=http%3A%2F%2Flocalhost%2Fcb"
+./scripts/test-login-theme.sh --keep
+# browse the printed URL, then:
 docker rm -f kc-theme-test
 ```
 
-If no headless browser exists, skip this step — it is a convenience, not a gate.
+The port binds to `127.0.0.1` by default. Forward it over SSH, or set
+`KC_TEST_BIND=0.0.0.0` to reach it from the LAN.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add keycloak/themes/anjoscode/login/resources/css/anjoscode.css
+git add keycloak/themes/anjoscode/login/resources/css/anjoscode.css scripts/test-login-theme.sh
 git commit -m "feat: style the login theme with the mascot palette"
 ```
 
