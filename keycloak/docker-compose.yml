@@ -34,6 +34,11 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
 
+    # Custom login theme for the anjoscode realm. Mounting it is inert until a
+    # realm or client selects it — see keycloak/themes/README.md.
+    volumes:
+      - ./themes:/opt/keycloak/themes:ro
+
     ports:
       - "127.0.0.1:18080:8080"
 
