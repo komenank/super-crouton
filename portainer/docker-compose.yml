@@ -1,9 +1,13 @@
 services:
   portainer:
-    image: portainer/portainer-ce:latest
+    image: portainer/portainer-ce:2.45.0
     container_name: portainer
     ports:
       - "127.0.0.1:19000:9000"
+    # Portainer 2.41+ validates the CSRF Origin header against this list.
+    # Must be full URLs including scheme — bare hostnames abort startup.
+    environment:
+      TRUSTED_ORIGINS: "https://docker.anjoscode.com"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer-data:/data
