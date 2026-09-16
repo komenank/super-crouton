@@ -11,3 +11,6 @@ rdpgw/config/rdpgw.yaml
 # Local database backups (do not commit dumps)
 backups/*
 !backups/.gitkeep
+
+# Brainstorming companion scratch (mockups, session state)
+.superpowers/
