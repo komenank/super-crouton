@@ -33,6 +33,29 @@ SSO for every application:
 Running it from `keycloak/` would create a separate compose project that clashes
 on `container_name`.
 
+### Careful: git can silently sever the bind mount
+
+Docker binds this directory by **inode**, not by path. Any git operation that
+*deletes* `keycloak/themes/` — checking out a branch or commit from before the
+theme existed, `git stash`, a hard reset — detaches the running container from
+it. Git then recreates the directory with a new inode, which the container
+cannot follow, so `/opt/keycloak/themes` inside it stays empty.
+
+The symptom is subtle: the login page keeps working and still loads this theme's
+CSS from Keycloak's in-memory cache, but falls back to the parent's
+`template.ftl`, so the hero panel quietly disappears.
+
+Check with:
+
+    docker exec keycloak ls /opt/keycloak/themes/anjoscode/login/
+
+Empty output means the mount is stale. Fix by recreating the container:
+
+    docker compose up -d --force-recreate keycloak   # from the REPO ROOT
+
+Now that the theme is on `main` this is much less likely, but it will happen
+again if you check out an older commit while Keycloak is running.
+
 ### Rolling back
 
 Set Login theme back to `keycloak.v2`. It applies immediately: no restart, no
