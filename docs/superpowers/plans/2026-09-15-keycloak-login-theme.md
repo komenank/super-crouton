@@ -179,7 +179,10 @@ if [ -n "$LOGIN_ACTION" ]; then
     --data-urlencode "username=nobody-here" \
     --data-urlencode "password=definitely-wrong" \
     -o "${WORK}/invalid.html"
-  assert_contains "${WORK}/invalid.html" "pf-v5-c-alert" "invalid credentials render an alert"
+  # keycloak.v2 renders a bad login as a FIELD-level error, not a global
+  # pf-v5-c-alert block. Assert on the user-visible message instead.
+  assert_contains "${WORK}/invalid.html" "Invalid username or password" \
+    "invalid credentials render the error message"
   assert_contains "${WORK}/invalid.html" "kc-hero"       "invalid-credentials page keeps hero"
 else
   bad "login form action not found in page"
