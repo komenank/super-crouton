@@ -145,7 +145,11 @@
   <p class="kc-hero__tagline">One account for everything here.</p>
   <#assign appName = ((client.name)!(client.clientId)!'')?trim>
   <#if appName?has_content>
-    <p class="kc-hero__app">Continuing to <strong>${kcSanitize(appName)?no_esc}</strong></p>
+    <#-- Built-in clients store their name as a message-bundle key, e.g.
+         "${client_security-admin-console}". advancedMsg resolves those and
+         passes a plain name through unchanged. Same call upstream uses in
+         login-oauth-grant.ftl. -->
+    <p class="kc-hero__app">Continuing to <strong>${kcSanitize(advancedMsg(appName))?no_esc}</strong></p>
   </#if>
 </aside>
 <div class="${properties.kcLogin!}">
