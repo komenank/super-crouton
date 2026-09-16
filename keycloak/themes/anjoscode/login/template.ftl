@@ -138,6 +138,16 @@
 </head>
 
 <body id="keycloak-bg" class="${properties.kcBodyClass!}" data-page-id="login-${pageId}">
+<div class="kc-split">
+<aside class="kc-hero">
+  <img class="kc-hero__mascot" src="${url.resourcesPath}/img/super-crouton.png" alt="" aria-hidden="true">
+  <div class="kc-hero__word">anjoscode</div>
+  <p class="kc-hero__tagline">One account for everything here.</p>
+  <#assign appName = ((client.name)!(client.clientId)!'')?trim>
+  <#if appName?has_content>
+    <p class="kc-hero__app">Continuing to <strong>${kcSanitize(appName)?no_esc}</strong></p>
+  </#if>
+</aside>
 <div class="${properties.kcLogin!}">
   <div class="${properties.kcLoginContainer!}">
     <header id="kc-header" class="pf-v5-c-login__header">
@@ -262,6 +272,7 @@
         </div>
     </main>
   </div>
+</div>
 </div>
 </body>
 </html>
