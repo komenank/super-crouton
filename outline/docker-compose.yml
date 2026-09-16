@@ -15,6 +15,9 @@ services:
       keycloak:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - default
+      - outline-api
 
   postgres:
     image: postgres:16.14-alpine
@@ -51,3 +54,7 @@ volumes:
     name: outline_postgres-data
   redis-data:
     name: outline_redis-data
+
+networks:
+  outline-api:
+    name: outline-api
