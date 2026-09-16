@@ -108,18 +108,26 @@ body#keycloak-bg {
 
 /* Exactly one visible box per field.
  *
- * .pf-v5-c-form-control is a <span> WRAPPING the <input>, so styling both
- * nests two boxes. PatternFly also draws its own borders with absolutely
- * positioned :before/:after pseudo-elements, and its focus indicator is :after
- * thickening the bottom border in PatternFly blue. Left alone, a focused field
- * shows three competing indicators.
+ * Two things fight us here. .pf-v5-c-form-control is a <span> WRAPPING the
+ * <input>, so styling both nests two boxes. And PatternFly draws its borders
+ * with inset:0 :before/:after pseudo-elements that carry no border-radius —
+ * the component is square by design — so they sit square on top of a rounded
+ * box and make the corners read as doubled. Its focus and hover states are the
+ * same mechanism, thickening a square bottom border in PatternFly blue; the
+ * control button behaves identically.
  *
- * So: the wrapper is the box, the input inside it is transparent, PatternFly's
- * pseudo-element border is zeroed, and focus is a single ring on the wrapper.
+ * So: drop the pseudo-elements entirely rather than trying to out-specify them,
+ * let the wrapper be the only box, keep the input inside transparent, and draw
+ * every state ourselves.
  */
+.kc-split .pf-v5-c-form-control::before,
+.kc-split .pf-v5-c-form-control::after,
+.kc-split .pf-v5-c-button.pf-m-control::before,
+.kc-split .pf-v5-c-button.pf-m-control::after {
+  content: none;
+}
+
 .kc-split .pf-v5-c-form-control {
-  --pf-v5-c-form-control--after--BorderBottomWidth: 0;
-  --pf-v5-c-form-control--after--BorderBottomColor: transparent;
   background: #fff;
   border: 1px solid var(--ajc-border);
   border-radius: 8px;
@@ -138,6 +146,18 @@ body#keycloak-bg {
   box-shadow: 0 0 0 3px rgba(98, 114, 147, 0.22);
 }
 
+/* The removed :after also carried PatternFly's invalid-field indicator, so
+ * re-state it on the box itself. (The error *icon* is a real element, not a
+ * pseudo-element, so it is unaffected.)
+ */
+.kc-split .pf-v5-c-form-control.pf-m-error {
+  border-color: #c9190b;
+}
+.kc-split .pf-v5-c-form-control.pf-m-error:focus-within {
+  border-color: #c9190b;
+  box-shadow: 0 0 0 3px rgba(201, 25, 11, 0.18);
+}
+
 /* The password visibility toggle is a sibling in the input group, not part of
  * the field — match it so the pair reads as one control.
  */
@@ -149,8 +169,14 @@ body#keycloak-bg {
   color: var(--ajc-mauve);
 }
 .kc-split .pf-v5-c-button.pf-m-control:hover {
+  background: var(--ajc-cream);
   border-color: var(--ajc-blue);
   color: var(--ajc-brown);
+}
+.kc-split .pf-v5-c-button.pf-m-control:focus-visible {
+  outline: none;
+  border-color: var(--ajc-blue);
+  box-shadow: 0 0 0 3px rgba(98, 114, 147, 0.22);
 }
 
 .kc-split .pf-v5-c-button.pf-m-primary {
@@ -179,4 +205,7 @@ body#keycloak-bg {
 
 @media (prefers-reduced-motion: no-preference) {
   .kc-split .pf-v5-c-button.pf-m-primary { transition: background 0.15s ease; }
+  .kc-split .pf-v5-c-button.pf-m-control {
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
 }

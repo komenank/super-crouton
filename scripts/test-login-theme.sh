@@ -150,8 +150,10 @@ if [ -n "$CSS_PATH" ]; then
   # Guards the two styling fixes from the 2026-09-16 review.
   assert_contains "${WORK}/theme.css" "login__main-header" \
     "card-top accent override still present"
-  assert_contains "${WORK}/theme.css" "BorderBottomWidth: 0" \
-    "PatternFly focus pseudo-border still neutralised"
+  assert_contains "${WORK}/theme.css" "pf-v5-c-form-control::before" \
+    "PatternFly square-cornered pseudo-borders still removed"
+  assert_contains "${WORK}/theme.css" "pf-m-error" \
+    "invalid-field indicator restated after removing :after"
 else
   bad "stylesheet URL not found in page"
 fi
