@@ -86,6 +86,15 @@ body#keycloak-bg {
 /* Keycloak's own header/brand block is redundant beside the hero. */
 .kc-split #kc-header { display: none; }
 
+/* keycloak.v2's styles.css draws a card-top accent here:
+ *   .pf-v5-c-login__main-header { border-top: 4px solid var(--keycloak-card-top-color) }
+ * That colour is PatternFly blue-400, not ours, and the card it belonged to is
+ * transparent in this theme — so the line floats with nothing under it.
+ */
+.kc-split .pf-v5-c-login__main-header {
+  border-top: none;
+}
+
 .kc-split h1#kc-page-title {
   color: var(--ajc-brown);
   font-size: 1.4rem;
@@ -97,19 +106,51 @@ body#keycloak-bg {
   color: var(--ajc-brown);
 }
 
-.kc-split .pf-v5-c-form-control,
-.kc-split input[type="text"],
-.kc-split input[type="email"],
-.kc-split input[type="password"] {
+/* Exactly one visible box per field.
+ *
+ * .pf-v5-c-form-control is a <span> WRAPPING the <input>, so styling both
+ * nests two boxes. PatternFly also draws its own borders with absolutely
+ * positioned :before/:after pseudo-elements, and its focus indicator is :after
+ * thickening the bottom border in PatternFly blue. Left alone, a focused field
+ * shows three competing indicators.
+ *
+ * So: the wrapper is the box, the input inside it is transparent, PatternFly's
+ * pseudo-element border is zeroed, and focus is a single ring on the wrapper.
+ */
+.kc-split .pf-v5-c-form-control {
+  --pf-v5-c-form-control--after--BorderBottomWidth: 0;
+  --pf-v5-c-form-control--after--BorderBottomColor: transparent;
   background: #fff;
   border: 1px solid var(--ajc-border);
   border-radius: 8px;
   color: var(--ajc-brown);
 }
-.kc-split .pf-v5-c-form-control:focus-within,
-.kc-split input:focus {
-  outline: 2px solid var(--ajc-blue);
-  outline-offset: 1px;
+.kc-split .pf-v5-c-form-control > input {
+  background: transparent;
+  border: 0;
+  color: inherit;
+}
+.kc-split .pf-v5-c-form-control > input:focus {
+  outline: none;
+}
+.kc-split .pf-v5-c-form-control:focus-within {
+  border-color: var(--ajc-blue);
+  box-shadow: 0 0 0 3px rgba(98, 114, 147, 0.22);
+}
+
+/* The password visibility toggle is a sibling in the input group, not part of
+ * the field — match it so the pair reads as one control.
+ */
+.kc-split .pf-v5-c-input-group { gap: 0.4rem; }
+.kc-split .pf-v5-c-button.pf-m-control {
+  background: #fff;
+  border: 1px solid var(--ajc-border);
+  border-radius: 8px;
+  color: var(--ajc-mauve);
+}
+.kc-split .pf-v5-c-button.pf-m-control:hover {
+  border-color: var(--ajc-blue);
+  color: var(--ajc-brown);
 }
 
 .kc-split .pf-v5-c-button.pf-m-primary {
