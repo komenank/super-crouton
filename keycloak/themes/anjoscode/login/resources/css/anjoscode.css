@@ -1,10 +1,141 @@
 /* anjoscode login theme
- * Palette sampled from images/super-crouton.png:
- *   #627293 dusty blue   — hero background
- *   #a87a63 warm tan     — primary button
- *   #48312b dark brown   — body text
- *   #f7f3eb cream        — form panel
- *   #d2b7a0 light tan    — input borders
- *   #6e5f67 muted mauve  — secondary text
- * Styling lands in Task 4.
+ * Palette sampled from images/super-crouton.png.
  */
+:root {
+  --ajc-blue:   #627293;
+  --ajc-blue-d: #4a5673;
+  --ajc-tan:    #a87a63;
+  --ajc-tan-d:  #8f6552;
+  --ajc-brown:  #48312b;
+  --ajc-cream:  #f7f3eb;
+  --ajc-border: #d2b7a0;
+  --ajc-mauve:  #6e5f67;
+}
+
+/* Drop PatternFly's stock background so the split can own the viewport. */
+body#keycloak-bg {
+  background: var(--ajc-cream) !important;
+  margin: 0;
+}
+
+.kc-split {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ---------- hero ---------- */
+.kc-hero {
+  flex: 0 0 46%;
+  background: linear-gradient(160deg, var(--ajc-blue) 0%, var(--ajc-blue-d) 100%);
+  color: var(--ajc-cream);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 2.5rem;
+  gap: 0.35rem;
+}
+.kc-hero__mascot {
+  width: min(260px, 60%);
+  height: auto;
+  border-radius: 14px;
+  margin-bottom: 1.25rem;
+}
+.kc-hero__word {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.kc-hero__tagline {
+  font-size: 0.95rem;
+  color: rgba(247, 243, 235, 0.72);
+  margin: 0;
+}
+.kc-hero__app {
+  margin: 1.5rem 0 0;
+  font-size: 0.9rem;
+  color: rgba(247, 243, 235, 0.85);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+}
+
+/* ---------- form side ----------
+ * keycloak.v2 sets properties.kcLogin=pf-v5-c-login, so this is the element
+ * template.ftl emits directly after the hero.
+ */
+.kc-split > .pf-v5-c-login {
+  flex: 1 1 54%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ajc-cream);
+  padding: 2rem;
+}
+
+.kc-split .pf-v5-c-login__main,
+.kc-split .pf-v5-c-login__container {
+  background: transparent;
+  box-shadow: none;
+  width: 100%;
+  max-width: 24rem;
+}
+
+/* Keycloak's own header/brand block is redundant beside the hero. */
+.kc-split #kc-header { display: none; }
+
+.kc-split h1#kc-page-title {
+  color: var(--ajc-brown);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.kc-split label,
+.kc-split .pf-v5-c-form__label-text {
+  color: var(--ajc-brown);
+}
+
+.kc-split .pf-v5-c-form-control,
+.kc-split input[type="text"],
+.kc-split input[type="email"],
+.kc-split input[type="password"] {
+  background: #fff;
+  border: 1px solid var(--ajc-border);
+  border-radius: 8px;
+  color: var(--ajc-brown);
+}
+.kc-split .pf-v5-c-form-control:focus-within,
+.kc-split input:focus {
+  outline: 2px solid var(--ajc-blue);
+  outline-offset: 1px;
+}
+
+.kc-split .pf-v5-c-button.pf-m-primary {
+  background: var(--ajc-tan);
+  border-radius: 8px;
+  font-weight: 700;
+}
+.kc-split .pf-v5-c-button.pf-m-primary:hover {
+  background: var(--ajc-tan-d);
+}
+
+.kc-split a { color: var(--ajc-mauve); }
+.kc-split a:hover { color: var(--ajc-brown); }
+
+/* ---------- responsive ---------- */
+@media (max-width: 860px) {
+  .kc-split { flex-direction: column; min-height: 100vh; }
+  .kc-hero {
+    flex: 0 0 auto;
+    padding: 2rem 1.5rem;
+  }
+  .kc-hero__mascot { width: 128px; margin-bottom: 0.75rem; }
+  .kc-hero__word { font-size: 1.35rem; }
+  .kc-hero__tagline { display: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .kc-split .pf-v5-c-button.pf-m-primary { transition: background 0.15s ease; }
+}

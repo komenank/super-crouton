@@ -4,9 +4,16 @@
 # in-memory database.
 set -euo pipefail
 
+# --keep leaves the container running so the themed pages can be browsed by
+# hand. Bind address is overridable for remote/SSH setups; the default keeps
+# the port off the network (forward it over SSH, or set KC_TEST_BIND).
+KEEP=0
+[ "${1:-}" = "--keep" ] && KEEP=1
+
 IMAGE="quay.io/keycloak/keycloak:26.6.2"
 NAME="kc-theme-test"
 PORT="18099"
+BIND="${KC_TEST_BIND:-127.0.0.1}"
 BASE="http://127.0.0.1:${PORT}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 THEMES_DIR="${REPO_ROOT}/keycloak/themes"
@@ -16,7 +23,14 @@ PASS=0
 FAIL=0
 
 cleanup() {
-  docker rm -f "$NAME" >/dev/null 2>&1 || true
+  if [ "$KEEP" = "1" ]; then
+    echo
+    echo "--keep: container '${NAME}' left running."
+    echo "  Sign-in page: ${BASE}/realms/master/protocol/openid-connect/auth?client_id=wiki-test&response_type=code&scope=openid&redirect_uri=http%3A%2F%2Flocalhost%2Fcb"
+    echo "  Stop it with: docker rm -f ${NAME}"
+  else
+    docker rm -f "$NAME" >/dev/null 2>&1 || true
+  fi
   rm -rf "$WORK"
 }
 trap cleanup EXIT
@@ -43,7 +57,7 @@ mkdir -p "$THEMES_DIR"
 echo "==> Starting disposable Keycloak on ${PORT}"
 docker rm -f "$NAME" >/dev/null 2>&1 || true
 docker run -d --name "$NAME" \
-  -p "127.0.0.1:${PORT}:8080" \
+  -p "${BIND}:${PORT}:8080" \
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
   -v "${THEMES_DIR}:/opt/keycloak/themes:ro" \
